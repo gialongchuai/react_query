@@ -1,23 +1,37 @@
+import { useQuery } from '@tanstack/react-query'
 import { getStudents } from 'apis/student.api'
+import { useQueryString } from 'pages/utils/utils'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ListStudent } from 'types/type.student'
 
 export default function Students() {
-  const [students, setStudents] = useState<ListStudent>([])
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  // const [students, setStudents] = useState<ListStudent>([])
+  // const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  useEffect(() => {
-    setIsLoading(true)
-    getStudents(1, 10)
-      .then((res) => {
-        console.log(res)
-        setStudents(res.data)
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
-  }, [])
+  // useEffect(() => {
+  //   setIsLoading(true)
+  //   getStudents(1, 10)
+  //     .then((res) => {
+  //       console.log(res)
+  //       setStudents(res.data)
+  //     })
+  //     .finally(() => {
+  //       setIsLoading(false)
+  //     })
+  // }, [])
+
+  const queryString = useQueryString()
+  const page = Number(queryString._page) || 1; // thống nhất đặt trên param là _param của json server
+
+  // react querty
+  const { data, isLoading } = useQuery({
+    // queryKey: ['students', _page], // khi có page ở đây mà có sự thay đổi state thì gọi tới fun getStu để rerender còn không có thì không cập nhật rerender luôn
+    // queryFn: () => getStudents(_page, 10)
+
+    queryKey: ['students', page],
+    queryFn: () => getStudents(page, 10)
+  })
   return (
     <div>
       <h1 className='text-lg'>Students</h1>
@@ -63,7 +77,7 @@ export default function Students() {
                 </tr>
               </thead>
               <tbody>
-                {students.map((stu) => (
+                {data?.data.map((stu) => (
                   <tr
                     key={stu.id}
                     className='border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600'
