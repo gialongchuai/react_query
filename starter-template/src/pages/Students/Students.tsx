@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ListStudent } from 'types/type.student'
 
+const LIMIT = 10
+
 export default function Students() {
   // const [students, setStudents] = useState<ListStudent>([])
   // const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -30,14 +32,23 @@ export default function Students() {
     // queryFn: () => getStudents(_page, 10)
 
     queryKey: ['students', page],
-    queryFn: () => getStudents(page, 10),
-    placeholderData: keepPreviousData,
+    queryFn: () => getStudents(page, LIMIT),
+    placeholderData: keepPreviousData
   })
 
-  const totalPage = Number(data?.headers['x-total-count'] || 0) / 10
+  const totalPage = Math.ceil(Number(data?.headers['x-total-count'] || 0) / LIMIT)
   return (
     <div>
       <h1 className='text-lg'>Students</h1>
+      <div className='mt-4'>
+        <Link
+          to='/students/add'
+          type='button'
+          className='rounded-base bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 px-4 py-2.5 text-center text-sm font-medium leading-5 text-white hover:bg-gradient-to-br focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800'
+        >
+          Add student
+        </Link>
+      </div>
       {isLoading && (
         <div role='status' className='mt-6 animate-pulse'>
           <div className='mb-4 h-4  rounded bg-gray-200 dark:bg-gray-700' />

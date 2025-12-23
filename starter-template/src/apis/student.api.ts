@@ -1,5 +1,5 @@
 import http from 'pages/utils/http'
-import { ListStudent } from 'types/type.student'
+import { ListStudent, Student } from 'types/type.student'
 
 export const getStudents = (page: number | string, limit: number | string) => {
   const res = http.get<ListStudent>('students', {
@@ -8,5 +8,12 @@ export const getStudents = (page: number | string, limit: number | string) => {
       _limit: limit
     }
   })
-  return res;
+  return res
 }
+
+export const addStudent = (student: Omit<Student, 'id'>) => {
+  return http.post<Student>('students', student)
+}
+
+// lúc gửi đi không có id
+// sau khi add success thì trả về Student có id
