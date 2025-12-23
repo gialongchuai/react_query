@@ -17,3 +17,15 @@ export const addStudent = (student: Omit<Student, 'id'>) => {
 
 // lúc gửi đi không có id
 // sau khi add success thì trả về Student có id
+
+export const getStudent = (id: string) => {
+  return http.get<Student>(`students/${id}`)
+}
+
+export const deleteStudent = (id: string | number) => {
+  return http.delete<{}>(`students/${id}`)
+}
+
+export const updateStudent = (id: string, student: Student) => {
+  return http.put<Student>(`students/${id}`, student)
+}

@@ -1,19 +1,20 @@
-import { useMutation } from '@tanstack/react-query'
-import { addStudent } from 'apis/student.api'
+import { dataTagErrorSymbol, useMutation, useQuery } from '@tanstack/react-query'
+import { addStudent, getStudent, updateStudent } from 'apis/student.api'
 import http from 'pages/utils/http'
 import { isAxiosError } from 'pages/utils/utils'
-import { useMemo, useState } from 'react'
-import { useMatch } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useMatch, useParams } from 'react-router-dom'
+import { toast } from 'react-toastify'
 import { Student } from 'types/type.student'
 
-type FormStateType = Omit<Student, 'id'>
+type FormStateType = Omit<Student, 'id'> | Student
 const initialFormState: FormStateType = {
   avatar: '',
   btc_address: '',
   country: '',
   email: '',
   first_name: '',
-  gender: 'other',
+  gender: 'Other',
   last_name: ''
 }
 
@@ -40,20 +41,24 @@ export default function AddStudent() {
   */
 
   // mutate xử lý bất đồng bộ nhưng không return 1 promise, có gì dùng mutate asyc để await try catahc nhoa
-  const { mutate, mutateAsync, error, data, reset } = useMutation({
+  const addStudentMutation = useMutation({
     mutationFn: (body: FormStateType) => {
       // call api
       return addStudent(body)
     }
   })
-  console.log('error', error)
-
+  // phải mang 2 ông add và update lên trên để không lỗi ạ above above
+  const updateStudentMutation = useMutation({
+    mutationFn: (formState: Student) => updateStudent(id as string, formState)
+  })
   const errorForm: FormError = useMemo(() => {
+    const error = addMatch ? addStudentMutation.error : updateStudentMutation.error
+
     if (isAxiosError<{ error: FormError }>(error) && error.response?.status === 422) {
       return error.response.data.error
     }
     return null
-  }, [error])
+  }, [addStudentMutation.error, addMatch, updateStudentMutation.error])
 
   // Dùng currying
   const handleChange = (name: keyof FormStateType) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,26 +66,44 @@ export default function AddStudent() {
       ...pre,
       [name]: event.target.value
     }))
-    if (data || error) {
-      reset()
+    if (addStudentMutation.data || addStudentMutation.error) {
+      addStudentMutation.reset()
     }
   }
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    try {
-      const res = await mutateAsync(formState)
-      console.log(res)
-      setFormState(initialFormState);
-    } catch (error) {
-      console.log('error', error)
+  const { id } = useParams()
+  const studentQuery = useQuery({
+    queryKey: ['student', id],
+    queryFn: () => getStudent(id as string),
+    enabled: id !== undefined // id khác unde thì qFc mới được gọi
+  })
+
+  useEffect(() => {
+    if (studentQuery.data && studentQuery.isSuccess) {
+    console.log(studentQuery.data.data)
+      setFormState(studentQuery.data.data)
     }
-    // mutate(formState, { // Cách 01: reset form
-    //   onSuccess: () => {
-    //     setFormState(initialFormState)
-    //   }
-    // })
-    console.log(formState)
+  }, [studentQuery.data, studentQuery.isSuccess])
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (addMatch) {
+      addStudentMutation.mutate(formState, {
+        // Cách 01: reset form
+        onSuccess: () => {
+          setFormState(initialFormState)
+          toast.success('Thêm học sinh thành công!')
+        }
+      })
+    } else {
+      updateStudentMutation.mutate(formState as Student, {
+        onSuccess: (_) => {
+          setFormState(initialFormState)
+          toast.success('Sửa học sinh thành công!')
+        }
+      })
+    }
   }
 
   return (
@@ -124,7 +147,7 @@ export default function AddStudent() {
                   name='gender'
                   className='h-4 w-4 border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600'
                   value='male'
-                  checked={formState.gender === 'male'}
+                  checked={formState.gender === 'Male'}
                   onChange={handleChange('gender')}
                 />
                 <label htmlFor='gender-1' className='ml-2 text-sm font-medium text-gray-900 dark:text-gray-300'>
@@ -138,7 +161,7 @@ export default function AddStudent() {
                   name='gender'
                   className='h-4 w-4 border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600'
                   value='female'
-                  checked={formState.gender === 'female'}
+                  checked={formState.gender === 'Female'}
                   onChange={handleChange('gender')}
                 />
                 <label htmlFor='gender-2' className='ml-2 text-sm font-medium text-gray-900 dark:text-gray-300'>
@@ -152,7 +175,7 @@ export default function AddStudent() {
                   name='gender'
                   className='h-4 w-4 border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600'
                   value='other'
-                  checked={formState.gender === 'other'}
+                  checked={formState.gender === 'Other'}
                   onChange={handleChange('gender')}
                 />
                 <label htmlFor='gender-3' className='ml-2 text-sm font-medium text-gray-900 dark:text-gray-300'>
@@ -260,7 +283,7 @@ export default function AddStudent() {
           type='submit'
           className='w-full rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 sm:w-auto'
         >
-          Submit
+          {addMatch ? 'Add' : 'Update'}
         </button>
       </form>
     </div>
