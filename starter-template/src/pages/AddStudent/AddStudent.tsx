@@ -1,4 +1,4 @@
-import { dataTagErrorSymbol, useMutation, useQuery } from '@tanstack/react-query'
+import { dataTagErrorSymbol, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { addStudent, getStudent, updateStudent } from 'apis/student.api'
 import http from 'pages/utils/http'
 import { isAxiosError } from 'pages/utils/utils'
@@ -48,8 +48,13 @@ export default function AddStudent() {
     }
   })
   // phải mang 2 ông add và update lên trên để không lỗi ạ above above
+  //Xử lý khi update thì cái Data Explorer trong icon tanstack cập nhật lại khi cập nhật thành công // reset lại cho đúng
+  const queryClient = useQueryClient();
   const updateStudentMutation = useMutation({
-    mutationFn: (formState: Student) => updateStudent(id as string, formState)
+    mutationFn: (formState: Student) => updateStudent(id as string, formState),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['student', id], data)
+    }
   })
   const errorForm: FormError = useMemo(() => {
     const error = addMatch ? addStudentMutation.error : updateStudentMutation.error
@@ -80,7 +85,7 @@ export default function AddStudent() {
 
   useEffect(() => {
     if (studentQuery.data && studentQuery.isSuccess) {
-    console.log(studentQuery.data.data)
+      console.log(studentQuery.data.data)
       setFormState(studentQuery.data.data)
     }
   }, [studentQuery.data, studentQuery.isSuccess])

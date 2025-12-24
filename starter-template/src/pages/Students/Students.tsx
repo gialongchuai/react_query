@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { deleteStudent, getStudents } from 'apis/student.api'
 import { useQueryString } from 'pages/utils/utils'
 import { useEffect, useState } from 'react'
@@ -34,8 +34,12 @@ export default function Students() {
 
     queryKey: ['students', page],
     queryFn: () => getStudents(page, LIMIT),
-    placeholderData: keepPreviousData
+    placeholderData: keepPreviousData,
+    // staleTime: có thể tham khảo cái này quá mấy s để call lại api
+    // ngoài ra còn có retry nếu abort nữa có thể tham khảo, gọi lại api mấy lần trong retry nếu cacel quá sớm 
   })
+
+  // Ông studentsQuery này có refecth theo key để tạo nút bấm gọi tới studentsQuery.refect call lại api
 
   const totalPage = Math.ceil(Number(studentsQuery.data?.headers['x-total-count'] || 0) / LIMIT)
   const deleteStudentMutation = useMutation({
@@ -43,13 +47,17 @@ export default function Students() {
       return deleteStudent(id)
     }
   })
-  
+  const queryClient = useQueryClient(); // làm mới lại page sau khi xóa thành cồng
+  // ông query này có thể cacel queries nếu quá thời gian truyền theo key
+  // queryClient.cancelQueries
+
   const handleDelete = (id: string | number) => {
     deleteStudentMutation.mutate(id, {
       onSuccess: (_, variable) => {
+        queryClient.invalidateQueries({ queryKey: ['students', page] }); // làm mới cái queryKey này gọi lại load trang
         toast.success(`Đã xóa thành công học sinh với id là: ${variable}`);
       }
-    });
+    })
   }
 
   return (
@@ -126,7 +134,12 @@ export default function Students() {
                       >
                         Edit
                       </Link>
-                      <button onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => handleDelete(stu.id)} className='font-medium text-red-600 dark:text-red-500'>Delete</button>
+                      <button
+                        onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => handleDelete(stu.id)}
+                        className='font-medium text-red-600 dark:text-red-500'
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}

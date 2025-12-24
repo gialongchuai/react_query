@@ -35,7 +35,7 @@ function App() {
     }
   ])
 
-  return (
+  return ( // có thể tham khảo cái isMutating isFetcg ? để xem có số lượng number api nào không rồi chèn thêm cái tsx Loading nếu trang đang load
     <div className='App'>
       <ToastContainer />
       <MainLayout>{elements}</MainLayout>
